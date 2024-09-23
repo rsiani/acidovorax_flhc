@@ -1,0 +1,46 @@
+sample,strain,media,flhc,flhc_media,mutant
+R4,LR124,Lj+Ri,flhC-,flhC- Lj+Ri,Wildtype
+R6,LR140,Lj+Ri,flhC+,flhC+ Lj+Ri,Wildtype
+R8,Comp_140,Lj+Ri,flhC+,flhC+ Lj+Ri,Mutant
+R10,Delta_140,Lj+Ri,flhC-,flhC- Lj+Ri,Mutant
+R11,LR124,Lj+Ri,flhC-,flhC- Lj+Ri,Wildtype
+R13,Comp_140,Lj+Ri,flhC+,flhC+ Lj+Ri,Mutant
+R14,LR124,Lj+Ri,flhC-,flhC- Lj+Ri,Wildtype
+R15,LR140,Lj+Ri,flhC+,flhC+ Lj+Ri,Wildtype
+R16,Delta_140,Lj+Ri,flhC-,flhC- Lj+Ri,Mutant
+R17,LR140,Lj+Ri,flhC+,flhC+ Lj+Ri,Wildtype
+R18,Comp_140,Lj+Ri,flhC+,flhC+ Lj+Ri,Mutant
+R19,LR124,Lj,flhC-,flhC- Lj,Wildtype
+R20,LR140,Lj,flhC+,flhC+ Lj,Wildtype
+R21,LR124,Lj+Ri,flhC-,flhC- Lj+Ri,Wildtype
+R22,LR140,Lj+Ri,flhC+,flhC+ Lj+Ri,Wildtype
+R23,Delta_140,Lj+Ri,flhC-,flhC- Lj+Ri,Mutant
+R24,LR124,Lj+Ri,flhC-,flhC- Lj+Ri,Wildtype
+R26,Comp_140,Lj,flhC+,flhC+ Lj,Mutant
+R27,Comp_140,Lj,flhC+,flhC+ Lj,Mutant
+R28,Delta_140,Lj,flhC-,flhC- Lj,Mutant
+R29,LR124,Lj,flhC-,flhC- Lj,Wildtype
+R30,LR140,Lj,flhC+,flhC+ Lj,Wildtype
+R31,LR140,Lj,flhC+,flhC+ Lj,Wildtype
+R32,LR140,Lj,flhC+,flhC+ Lj,Wildtype
+R34,Comp_140,Lj+Ri,flhC+,flhC+ Lj+Ri,Mutant
+R37,Comp_140,Lj,flhC+,flhC+ Lj,Mutant
+R38,LR140,Lj,flhC+,flhC+ Lj,Wildtype
+R39,Comp_140,Lj+Ri,flhC+,flhC+ Lj+Ri,Mutant
+R40,LR124,Lj,flhC-,flhC- Lj,Wildtype
+R41,Delta_140,Lj,flhC-,flhC- Lj,Mutant
+R42,Comp_140,Lj,flhC+,flhC+ Lj,Mutant
+R43,Delta_140,Lj,flhC-,flhC- Lj,Mutant
+R44,Delta_140,Lj,flhC-,flhC- Lj,Mutant
+R45,LR140,Lj,flhC+,flhC+ Lj,Wildtype
+R46,Delta_140,Lj,flhC-,flhC- Lj,Mutant
+R47,Comp_140,Lj,flhC+,flhC+ Lj,Mutant
+R48,Delta_140,Lj+Ri,flhC-,flhC- Lj+Ri,Mutant
+R49,Delta_140,Lj+Ri,flhC-,flhC- Lj+Ri,Mutant
+R50,LR140,Lj+Ri,flhC+,flhC+ Lj+Ri,Wildtype
+R51,LR124,Lj+Ri,flhC-,flhC- Lj+Ri,Wildtype
+R57,LR124,Lj,flhC-,flhC- Lj,Wildtype
+R58,LR124,Lj,flhC-,flhC- Lj,Wildtype
+RExC1,NA,NA,NA,NA,Mutant
+RExC2,NA,NA,NA,NA,Mutant
+RExC3,NA,NA,NA,NA,Mutant

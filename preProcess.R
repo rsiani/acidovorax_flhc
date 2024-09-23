@@ -89,15 +89,7 @@ background =
                  .default = str_remove_all(Product, "[:punct:]") |>
                    str_to_lower() |>
                    abbreviate())),
-    descr = str_c(Product, Description) |> str_to_lower(),
-    module = case_when(
-      str_detect(descr, "vi secre|t6") ~ "T6SS",
-      str_detect(descr, "ii secre|t2|cterm") ~ "T2SS",
-      str_detect(descr, "general secretio") ~ "general_secretion",
-      str_detect(descr, "flagell") ~ "flagella",
-      str_detect(descr, "sigma-54") ~ "sigma54",
-      str_detect(descr, "c-di-gmp|diguanylate") ~ "c_di_GMP",
-      .default = NA))
+    descr = str_c(Product, Description) |> str_to_lower())
 
 uniques =
   rbh |>
@@ -111,7 +103,7 @@ filter(background, target_id %in% uniques)
 cds =
   background |>
   filter(Type %in% c("cds"),
-         str_detect(str_c(Product, Description) |> str_to_lower(),
+         str_detect(descr,
                     "ibosom|trna|rrna|transfer-messenger|elongation|initiation",
                     negate = T),
          ) |>

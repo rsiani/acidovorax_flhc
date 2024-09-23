@@ -197,7 +197,7 @@ plot_svd_nice2 =
 fdr = \(.x, fdr_level) tibble(
   FDR = p.adjust(.x, "fdr"),
   significant = FDR <= fdr_level,
-  s.value = -log2(FDR))
+  s.value = -log2(.x))
 
 
 adjust_Q = function(.x, fdr_level) {

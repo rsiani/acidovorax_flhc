@@ -9,7 +9,7 @@ source("scripts/preProcess.R")
 res_lme =
   my_data |>
   nest(.by = c(Gene, target_id, Product,
-               Description, InterPro, Pfam, module,
+               Description, InterPro, Pfam,
                starts_with("PGP"))) |>
   mutate(mod =
            map(
@@ -60,7 +60,11 @@ tidied =
                              "flhC+ Lj+Ri", "flhC- Lj+Ri")))
 
 tidied |>
-  janitor::tabyl(significant, side)
+  janitor::tabyl(side, significant)
+
+tidied |>
+  janitor::tabyl(side)
+
 
 # upset plot -------------------------------------------------------------
 
@@ -214,6 +218,19 @@ my_ggsave("Response", 8, 10)
 
 my_ggsave("Regulation", 8, 8)
 
+c_di_gmp =
+  tidied |>
+  filter(str_detect(str_c(Product, Description) |>
+                      str_to_lower(), "c-di-gmp|diguanylate"))
+c_di_gmp |>
+  count(significant, term, side)
 
-tidied |>
-  drop_na(module) |> View()
+
+my_data |>
+  filter(Gene %in% c("flhD", "ompR")) |>
+  pivot_wider(
+    id_cols = c(sample, flhc, media, strain),
+    names_from = Gene,
+              values_from = lnRatio) |>
+  lm(flhD ~ ompR * flhc, data = _) |> tidy()
+

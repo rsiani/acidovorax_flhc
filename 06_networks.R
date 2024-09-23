@@ -144,7 +144,7 @@ total_graph =
               names_from = flhc_graph,
               values_fill = 0) |>
   left_join(my_data |>
-              select(Gene, Product, Description, module, starts_with("PGP")) |>
+              select(Gene, Product, Description, starts_with("PGP")) |>
               distinct(),
             join_by(name == Gene))
 
@@ -169,3 +169,19 @@ overrepp =
 
 overrepp |>
   filter(group == 2, significant) |> View()
+
+
+total_graph |>
+  filter(group_plus == 2) |>
+  count(group_minus) |> print(n = 26)
+
+
+nested_propr |>
+  pluck("corr", 2) |>
+  getResults() |>
+  filter(abs(propr) >= .75) |>
+  select(from = Pair,
+         to = Partner,
+         weights = propr) |>
+  filter(to %in% c("flhC", "flhD") | from %in% c("flhC", "flhD")) |>
+  View()
