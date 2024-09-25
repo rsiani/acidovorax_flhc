@@ -13,7 +13,7 @@ fastp_data =
   group_by(sample, step) |>
   summarise(across(total_reads:total_bases, sum), across(q20_bases:gc_content, mean))
 
-write_csv(fastp_data, "fastp_data.csv")
+# write_csv(fastp_data, "fastp_data.csv")
 
 fastp_data |>
   ungroup() |>
@@ -24,7 +24,7 @@ fastp_data |>
   geom_col(aes(y = sample, x = total_reads, fill = step),
            position = "dodge")
 
-# quality check after kallisto and kmer size comparison: 21 wins!
+# quality check after kallisto and kmer size comparison: 31 is best at the end!
 
 kallisto_check =
   fs::dir_ls("data/", regexp = "kall.*.json", recurse = 2) |>
@@ -35,8 +35,8 @@ kallisto_check =
     kmer_size = str_extract(path, "kall[0-9]{2}") |>
       str_extract("[0-9]{2}"))
 
-write_csv(kallisto_check |>
-            filter(kmer_size == 31), "kallisto_check.csv")
+# write_csv(kallisto_check |>
+#             filter(kmer_size == 31), "kallisto_check.csv")
 
 kallisto_check |>
   filter(str_detect(sample, "data", negate = T)) |>

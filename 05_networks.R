@@ -1,8 +1,8 @@
+### Gene-associations networks
+## Roberto Siani
+# 2024
+
 # network --------------------------------------------------------------------
-
-source("scripts/preProcess.R")
-
-p_load(propr)
 
 summarise(my_data, n_distinct(sample), .by = c(flhc, strain))
 
@@ -12,6 +12,10 @@ my_data |>
   summarise(n_distinct(Gene), .by = flhc)
 
 set.seed(37)
+
+# compute networks on 14 samples, with higher detection stringency
+# associations are recovered via partial correlation estimation
+# with basis shrinkage
 
 nested_propr =
   my_data |>
@@ -30,13 +34,16 @@ nested_propr =
                         ivar = NA,
                         p = 99,
                         fixseed = T) |>
-                      updateCutoffs(custom_cutoffs = seq(-.95, .95, by = .05),
+                      updateCutoffs(custom_cutoffs = c(-.75, .75),
                                     tails = "both",
                                     ncores = 7)))
 
+# predicted fdr at correlation of .75
 
 nested_propr |> pluck("corr", 1, "fdr")
 nested_propr |> pluck("corr", 2, "fdr")
+
+# filter and compute network properties
 
 flhc_tgr =
   nested_propr |>
@@ -73,6 +80,8 @@ delta_tgr =
     degree = centrality_degree(),
     n_groups = n_distinct(group),
     efficiency = graph_efficiency())
+
+# plot networks
 
 p1 =
   ggraph(flhc_tgr, "nicely") +
@@ -112,6 +121,8 @@ p2 = delta_tgr |>
   theme(legend.position = "none") +
   scale_size(range = c(0.1, 1.5))
 
+# table of graph properties
+
 compare_graphs =
   bind_rows(list("flhC+" = flhc_tgr |> as_tibble(),
                  "flhC-" = delta_tgr |> as_tibble()),
@@ -123,6 +134,8 @@ compare_graphs =
   summarise(across(where(is.numeric), mean),
                                         .by = flhc) |>
   mutate(across(where(is.numeric), ~ round(.x, 2)))
+
+# plotting
 
 p1 + p2
 
@@ -138,6 +151,8 @@ compare_graphs |>
                 locations = gt::cells_column_labels()) |>
   gt::gtsave("compare_graphs2.png")
 
+# clustering
+
 total_graph =
   bind_rows(list("plus" = flhc_tgr |> as_tibble(),
                  "minus" = delta_tgr |> as_tibble()),
@@ -151,9 +166,13 @@ total_graph =
               distinct(),
             join_by(name == Gene))
 
+# flhdc cluster
+
 total_graph |>
   filter(group_plus == 2) |>
   pull(name) -> cluster_flhdc
+
+# overrepresentation in clusters
 
 overrepp =
   clusterProfiler::compareCluster(
@@ -170,25 +189,18 @@ overrepp =
   select(-c(p.adjust,qvalue)) |>
   mutate(adjust_Q(pvalue, 0.2))
 
+# we are only really interested in cluster flhDC
+
 overrepp |>
   filter(group == 2, significant) |> View()
 
+# how are cluster flhDC genes grouped in flhC-
 
 total_graph |>
   filter(group_plus == 2) |>
   count(group_minus) |> print(n = 26)
 
-
-nested_propr |>
-  pluck("corr", 2) |>
-  getResults() |>
-  filter(abs(propr) >= .75) |>
-  select(from = Pair,
-         to = Partner,
-         weights = propr) |>
-  filter(to %in% c("flhC", "flhD") | from %in% c("flhC", "flhD")) |>
-  View()
-
-p1 / p2
-
-my_ggsave("network", w = 4.5, h = 9)
+#
+# p1 / p2
+#
+# my_ggsave("network", w = 4.5, h = 9)

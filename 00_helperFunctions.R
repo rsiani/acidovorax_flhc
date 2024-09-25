@@ -1,8 +1,12 @@
-# my suite of basic packages
+### Helper functions and other stuff
+## Roberto Siani
+# 2024
+
+# load libraries
 
 pacman::p_load(pacman, tidyverse, patchwork,
                ggraph, tidygraph, broom,
-              broom.mixed, nlme, ggrepel)
+              broom.mixed, nlme, ggrepel, propr)
 
 # ggplot theme for visualization
 
@@ -25,66 +29,6 @@ theme_set(
     )
 )
 
-# read HMMER tblout, modified from https://github.com/arendsee/rhmmer
-
-read_tblout <- function(file){
-
-  col_types <-
-    readr::cols(
-      query_name         = readr::col_character(),
-      query_accession    = readr::col_character(),
-      domain_name          = readr::col_character(),
-      domain_accession     = readr::col_character(),
-      sequence_evalue     = readr::col_double(),
-      sequence_score      = readr::col_double(),
-      sequence_bias       = readr::col_double(),
-      best_domain_evalue  = readr::col_double(),
-      best_domain_score   = readr::col_double(),
-      best_domain_bis     = readr::col_double(),
-      domain_number_exp   = readr::col_double(),
-      domain_number_reg   = readr::col_integer(),
-      domain_number_clu   = readr::col_integer(),
-      domain_number_ov    = readr::col_integer(),
-      domain_number_env   = readr::col_integer(),
-      domain_number_dom   = readr::col_integer(),
-      domain_number_rep   = readr::col_integer(),
-      domain_number_inc   = readr::col_character()
-    )
-
-  N <- length(col_types$cols)
-
-  # the line delimiter should always be just "\n", even on Windows
-  lines <- readr::read_lines(file, lazy=FALSE, progress=FALSE)
-
-  table <- sub(
-    pattern = sprintf("(%s).*", paste0(rep('\\S+', N), collapse=" +")),
-    replacement = '\\1',
-    x=lines,
-    perl = TRUE
-  ) %>%
-    gsub(pattern="  *", replacement="\t") %>%
-    paste0(collapse="\n") %>%
-    readr::read_tsv(
-      col_names=names(col_types$cols),
-      comment='#',
-      na='-',
-      col_types = col_types,
-      lazy=FALSE,
-      progress=FALSE
-    )
-
-  descriptions <- lines[!grepl("^#", lines, perl=TRUE)] %>%
-    sub(
-      pattern = sprintf("%s *(.*)", paste0(rep('\\S+', N), collapse=" +")),
-      replacement = '\\1',
-      perl = TRUE
-    )
-
-  table$description <- descriptions[!grepl(" *#", descriptions, perl=TRUE)]
-
-  table
-}
-
 # extract gene ID
 
 gene_extract = \(.x) str_extract(.x,
@@ -102,9 +46,9 @@ my_ggsave =
     )
   }
 
-# plot sing value decomposition results
+# plot single value decomposition
 
-plot_svd_nice =
+plot_svd =
   function(my.data, PCx, PCy){
     ggplot(
       data =
@@ -115,7 +59,7 @@ plot_svd_nice =
       )) +
       geom_point(
         aes(
-          shape = str_c(flhc,mutant),
+          shape = strain,
           color = flhc_media,
           fill = after_scale(color),
         ),
@@ -123,7 +67,7 @@ plot_svd_nice =
         size = 2,
         show.legend = T
       ) +
-      scale_shape_manual(values = c(2, 24, 1, 21)) +
+      scale_shape_manual(values = pal_shape) +
       scale_color_manual(
         values = pal_bac4,
         aesthetics = c("color", "fill")) +
@@ -143,62 +87,17 @@ plot_svd_nice =
                                 show.legend = F) +
       ggside::scale_xsidey_continuous(labels = NULL) +
       ggside::scale_ysidex_continuous(labels = NULL) +
-      # coord_fixed(ratio = str_extract(names(my.data)[PCx + 1], "0.[0-9]*$") |> as.numeric() /
-      #               str_extract(names(my.data)[PCx + 1], "0.[0-9]*$") |> as.numeric()) +
       theme(text = element_text(size = 20))
   }
 
-plot_svd_nice2 =
-  function(my.data, PCx, PCy){
-    ggplot(
-      data =
-        my.data,
-      aes(
-        x = .data[[names(my.data)[PCx + 1]]],
-        y = .data[[names(my.data)[PCy + 1]]]
-      )) +
-      geom_point(
-        aes(
-          shape = str_c(flhc,mutant),
-          color = flhc_media,
-          fill = after_scale(color),
-        ),
-        size = 2,
-        stroke = 1,
-        show.legend = T
-      ) +
-      ggalt::geom_encircle(
-        aes(fill = flhc_media,
-            color = flhc_media),
-        alpha = .1,
-        expand = 0.01,
-        show.legend = F) +
-      scale_shape_manual(values = c(24, 21)) +
-      scale_color_manual(
-        values = pal_bac4,
-        aesthetics = c("color", "fill")) +
-      ggside::geom_xsidedensity(aes(fill = flhc_media),
-                                alpha = 1/2,
-                                color = NA,
-                                show.legend = F) +
-      ggside::geom_ysidedensity(aes(fill = flhc_media),
-                                alpha = 1/2,
-                                color = NA,
-                                show.legend = F) +
-      ggside::scale_xsidey_continuous(labels = NULL) +
-      ggside::scale_ysidex_continuous(labels = NULL) +
-      # coord_fixed(ratio = str_extract(names(my.data)[PCx + 1], "0.[0-9]*$") |> as.numeric() /
-      #               str_extract(names(my.data)[PCx + 1], "0.[0-9]*$") |> as.numeric()) +
-      theme(text = element_text(size = 20))
-  }
-
-# adjust p value
+# simple fdr adjustment
 
 fdr = \(.x, fdr_level) tibble(
   FDR = p.adjust(.x, "fdr"),
   significant = FDR <= fdr_level,
   s.value = -log2(.x))
 
+# lfdr adjustment for gene level comparisons
 
 adjust_Q = function(.x, fdr_level) {
   q = qvalue::qvalue(.x, fdr.level = fdr_level)
@@ -208,32 +107,6 @@ adjust_Q = function(.x, fdr_level) {
     lfdr = q$lfdr,
     significant = q$significant)
 }
-
-# read annotation from interpro
-
-read_interpro =
-  function(filename) {
-    read_tsv(filename,
-             col_names = c("LR", "MD5", "Length", "Analysis",
-                           "Signature_accession", "Signature_description",
-                           "Start", "End", "score",
-                           "Status", "Date", "IP_accession", "IP_description"),
-             na = "-") |>
-      group_by(LR) |>
-      summarise(
-        InterPro = str_c(str_unique(paste(IP_accession,
-                                          IP_description,
-                                          sep = ": ")),
-                         collapse = "; ") |>
-          str_remove_all("NA: NA(; )?") |>
-          na_if(""),
-        Full = str_c(str_unique(paste(Signature_accession,
-                                      Signature_description,
-                                      sep = ": ")),
-                     collapse = "; ") |>
-          str_remove_all("NA: NA(; )?") |>
-          na_if(""))
-  }
 
 # read pfam interpro annotation
 
@@ -310,15 +183,15 @@ read_annotation =
 
 sparsity = \(.x) sum(.x == 0, na.rm = T)/length(.x)
 
-# palette for RNAseq experiment
+# color and shape palettes
+
+pal_bac2 = c("flhC+" = "#FC7D0B", "flhC-" = "#1170AA")
 
 pal_bac4 =
   c("flhC+ Lj" = "#FC7D0B",
     "flhC+ Lj+Ri" = "#FFBC79",
     "flhC- Lj" = "#1170AA",
     "flhC- Lj+Ri" = "#A3CCE9")
-
-pal_bac2 = c("flhC+" = "#FC7D0B", "flhC-" = "#1170AA")
 
 pal_bac7 = c("Lj"= "#8BC34A",
              "Lj+Ri"= "#E1BEE7",
@@ -336,6 +209,13 @@ pal_growth7 = c("control Lj"= "#8BC34A",
             "flhC- Lj+Ri" = "#A3CCE9",
             "ns" = "grey75")
 
+pal_shape =
+  c("LR140" = 21,
+    "Comp_140" = 1,
+    "LR124" = 24,
+    "Delta_140" = 2,
+    "media" = 15)
+
 # summarize fastp reports
 
 summary_to_df = function(x) {
@@ -347,6 +227,8 @@ summary_to_df = function(x) {
              str_remove("_R1_001.fastq.json"))
 }
 
+# centered log ratio transformation
+
 centered_log_ratio = function(.x, .pseudo) {
   local_min = min(.x[.x != 0])
   pseudo = if_else(.x == 0, local_min * .pseudo, .x)
@@ -354,7 +236,11 @@ centered_log_ratio = function(.x, .pseudo) {
 }
 
 
+# for cluster profiler
+
 enricher = clusterProfiler::enricher
+
+# for PGP5 pathway analysis
 
 all_pgp =
   bind_rows(read_tsv("data/bakta/LR124_pgp2.txt",
@@ -372,6 +258,8 @@ all_pgp =
                   str_replace_all("_", " ") |>
                   str_replace("prtoeins", "proteins") |>
                   str_replace_all("plant vitamin|root vitamin", "vitamin")))
+
+# volcano plot
 
 plot_volcano =
   function(.term) {
@@ -406,6 +294,8 @@ plot_volcano =
                           parse = T) +
   scale_color_manual(values = pal_bac7)}
 
+# pathway analysis
+
 plot_pmr =
   function(.term) {
   pmr_tidied |>
@@ -426,6 +316,8 @@ plot_pmr =
                                           linewidth = 0.2),
         strip.clip = "off")
     }
+
+# representation of terms
 
 plot_enrich  =
   function(.term) {
@@ -471,12 +363,9 @@ plot_enrich  =
   scale_alpha(range = c(1/4, 3/4))
   }
 
+# model testing for the variance parameters
 
-# testing the variance parameters (sequencing depth and technical variance)
-
-# we use a subset of genes for the testing to speed up
-
-# gene_ten = sample(unique(my_data$Gene), size = 2)
+# gene_ten = sample(unique(my_data$Gene), size = 10)
 #
 # model = lme(lnRatio ~ flhc * media + Gene,
 #              weights = ~ tech_var,

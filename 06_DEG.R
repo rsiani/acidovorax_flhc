@@ -1,10 +1,12 @@
+### Differential Gene/Pathway Expression
+## Roberto Siani
+# 2024
 
 source("scripts/preProcess.R")
 
 # model --------------------------------------------------------------------
-# the model uses flhc and media type as predictors and strain as
-# random effect to account for the residual differences in the
-# genotypes
+
+# mixed-effects models
 
 res_lme =
   my_data |>
@@ -35,7 +37,7 @@ qqnorm(augmented$.resid)
 ggplot(augmented) +
   geom_boxplot(aes(.resid, str_c(strain, media)))
 
-# coefficients
+# extract model summaries
 
 tidied =
   res_lme |>
@@ -201,6 +203,9 @@ pmr_tidied =
   left_join(all_pgp |>
               select(PGP1, PGP2, PGP3, PGP4, PGP5) |>
               distinct())
+
+
+# plotting ----------------------------------------------------------------
 
 (plot_volcano("Expression") /
   plot_enrich("Expression")) |

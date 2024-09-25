@@ -18,13 +18,15 @@ plot_flhcd =
   facet_wrap(~ Gene) +
   scale_color_manual(values = pal_bac4) +
   theme(axis.text.x = ggtext::element_markdown(angle = 45, hjust = 1)) +
-  scale_shape_manual(values = c(24, 2, 21, 1))  +
-  scale_x_discrete(label = list("Comp_140" = "LR140<sup>_ΔflhC;ΔflhC_</sup>",
+  scale_shape_manual(values = pal_shape)  +
+  scale_x_discrete(label = list("Comp_140" = "LR140<sup><i>ΔflhC;ΔflhC</i></sup>",
                                 "Delta_140" = "LR140<sup>_ΔflhC_</sup>"))
 
 plot_flhcd
 
 my_ggsave("flhcd_diff", 3, 3)
+
+# singular value decomposition (wildtype only)
 
 res_svd =
   my_data |>
@@ -44,23 +46,18 @@ svd_df =
                 pull(name))) |>
   left_join(my_data |>
               filter(Gene %in% "flhC") |>
-              select(sample,strain, depth, lnRatio, flhc, flhc_media, sparsity, media, mutant))
+              select(sample, strain, depth, lnRatio,
+                    flhc, flhc_media, sparsity, media, mutant))
 
-# visualization
+# correlation with flhC, depth and sparsity
 
 ggcorrplot::ggcorrplot(corr =
                          svd_df |>
                          select(where(is.numeric)) |>
                          cor() |>
                          round(1))
-#
-# svd_df |>
-#   pivot_longer(starts_with("PC")) |>
-#   summarise(.by = name, p.val = kruskal.test(value ~ media)$p.value) |>
-#   arrange(p.val)
 
-plot_svd_nice2(svd_df, 1, 2)
-
+plot_svd(svd_df, 1, 2)
 
 set.seed(1)
 vegan::adonis2(dist(res_svd$x) ~ flhc * media + depth * sparsity,
@@ -69,6 +66,8 @@ vegan::adonis2(dist(res_svd$x) ~ flhc * media + depth * sparsity,
                by = "terms") |>
   as.data.frame() |>
   gt::gt(rownames_to_stub = T)
+
+# now also with mutants
 
 res_svd2 =
   my_data |>
@@ -99,8 +98,8 @@ ggcorrplot::ggcorrplot(corr =
 
 # visualization
 
-plot_svd_nice2(svd_df, 1, 2) +
-  plot_svd_nice(svd_df2,1, 2) +
+plot_svd(svd_df, 1, 2) +
+  plot_svd(svd_df2,1, 2) +
   plot_flhcd +
   plot_layout(design = "
               ######CCC

@@ -1,8 +1,8 @@
-# load essentials
+### Pre-processing of read count estimates
+## Roberto Siani
+# 2024
 
-source("scripts/00_helperFunctions.R", echo = TRUE)
-
-source("scripts/02_qualityCheck.R")
+source("scripts/00_helperFunctions.R")
 
 # LOADING -----------------------------------------------------------------
 
@@ -29,7 +29,9 @@ metadata =
                         .default = "Mutant") |>
       factor(levels = c("Wildtype", "Mutant")))
 
-write_csv(metadata, "metadata.csv")
+# write_csv(metadata, "metadata.csv")
+
+# palette
 
 metadata |>
   select(flhc, media, strain, mutant) |>
@@ -43,26 +45,30 @@ metadata |>
                                             "Comp_140",
                                             "LR124",
                                             "Delta_140",
-                                            "media"))) |>
+                                            "media")),
+         mutant = factor(mutant, levels = c("Wildtype", "Mutant", "media")),
+         media = factor(media, levels = c("Lj+Ri", "Lj"))) |>
   ggplot() +
-  geom_point(aes(x = strain, y = media, color = str_c(flhc, media, sep = " "),
+  geom_point(aes(y = strain, x = media, color = str_c(flhc, media, sep = " "),
                  fill = after_scale(color),
                  shape = strain),
              size = 5) +
   scale_color_manual(values = pal_growth7) +
-  scale_shape_manual(values = c(1, 21, 2, 24, 22)) +
-  facet_wrap(~ mutant, scales = "free_x") +
-  theme(axis.text.x = ggtext::element_markdown(angle = 45, vjust = 1, hjust = 1)) +
-  scale_x_discrete(label = list("Comp_140" = "LR140<sup>_ΔflhC;ΔflhC_</sup>",
+  scale_shape_manual(values = pal_shape) +
+  facet_grid(mutant ~ ., scales = "free_y") +
+  theme(axis.text.y = ggtext::element_markdown(),
+        axis.title = element_blank()) +
+  scale_y_discrete(label = list("Comp_140" = "LR140<sup>_ΔflhC;ΔflhC_</sup>",
                                 "Delta_140" = "LR140<sup>_ΔflhC_</sup>"))
 
-# load lnRatio140 CDS annotation (interproscan)
+my_ggsave("legend", 2, 3)
+
+# load annotations (Bakta/Pfam/PLABase)
 
 LR140 =
   read_annotation("LR140") |>
   left_join(rbh |> select(-LR124), join_by(target_id == LR140))
 
-# load LR124 CDS annotation (interproscan)
 
 LR124 =
   read_annotation("LR124") |>
@@ -92,6 +98,8 @@ background =
                    abbreviate())),
     descr = str_c(Product, Description) |> str_to_lower())
 
+# 5 gene difference between LR124 and LR140
+
 uniques =
   rbh |>
   filter(is.na(LR140) | is.na(LR124)) |>
@@ -100,6 +108,8 @@ uniques =
   pull(value)
 
 filter(background, target_id %in% uniques)
+
+# to preserve only coding sequences
 
 cds =
   background |>
@@ -115,7 +125,7 @@ cds =
 
 files = fs::dir_ls("data/kall31/", regexp = "abundance.h5", recurse = 2)
 
-### import data and pre-select samples
+### import data, remove non CDS and negative samples
 
 raw_data =
   files |>
@@ -126,11 +136,9 @@ raw_data =
         data.frame() |>
         rownames_to_column("Gene")) |>
   list_rbind(names_to = "sample") |>
-  filter(str_detect(sample, "x", negate = T),
-        Gene %in% cds) |>
+  filter(str_detect(sample, "x", negate = T), Gene %in% cds) |>
   complete(Gene, sample) |>
   mutate(across(where(is.numeric), ~ if_else(is.na(.x), 0, ceiling(.x)))) |>
-  filter(str_detect(sample, "x", negate = T), Gene %in% cds) |>
   left_join(metadata)
 
 # check samples quality (n of reads and percentage undetected)
@@ -140,8 +148,7 @@ summarise(raw_data,
           sparsity = sparsity(counts),
           .by = c(sample, flhc_media, strain)) |> View()
 
-# filter sample with more than 1/3 genes undetected
-# check group size and
+# filter sample with more less than 55 percent genes detected
 
 raw_data |>
   filter(sparsity(counts) < .55, .by = sample) |>
@@ -163,20 +170,20 @@ raw_data |>
   ggpp::stat_quadrant_counts(xintercept = .55, yintercept = 5,
                              color = "indianred")
 
-# filtering genes detected  (max sparsity at .55)
+# filtering genes detected  (max sparsity at .55, equal or more than median in
+# at least 5 samples)
 
 clean_data =
   raw_data |>
   filter(sparsity(counts) < .55, .by = sample) |>
-  mutate(med = median(if_else(counts == 0, NA, counts),
-                      na.rm = T),
+  mutate(med = median(if_else(counts == 0, NA, counts), na.rm = T),
          .by = sample) |>
   filter(
     Gene %in% cds,
     sum(counts >= med) >= 5,
     sparsity(counts) < .55,
     .by = Gene) |>
-  mutate(depth = sum(counts),
+  mutate(depth = log(sum(counts)),
          sparsity = sparsity(counts), .by = sample)
 
 # sparsity is controlled to ~ 13%
@@ -195,15 +202,14 @@ n_distinct(clean_data$Gene) # 1605
 summarise(clean_data,
           sum(counts),
           sparsity(counts),
-          scale_fact = sum(counts > 0)/n(),
           local_min = min(if_else(counts == 0, NA, counts), na.rm = T),
           pseudo = local_min * exp(-1),
           .by = c(sample, flhc_media, strain)) |> View()
 
-median(clean_data$depth)
+exp(median(clean_data$depth))
 
 # filtering and centered-log-ratio transformation
-# pseudo values is exp(-1) * sample minimum
+# pseudo values is exp(-1) * local minimum detected
 
 transformed_data =
   clean_data |>
@@ -230,10 +236,7 @@ my_data =
                                     as.matrix()),
          tech_var = Rfast::rowVars(transformed_data |>
                                      select(starts_with("clr")) |>
-                                     as.matrix())) |>
-  mutate(depth = log(sum(counts)),
-         sparsity = sparsity(counts),
-         .by = sample)
+                                     as.matrix()))
 
 
 my_data |> summarise(depth = mean(depth),
