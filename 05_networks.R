@@ -81,7 +81,7 @@ p1 =
                 color = pal_bac2[1]) +
   geom_node_point(
     aes(
-      size = log(degree),
+      size = degree,
       shape = if_else(degree > quantile(degree, .95), I(19), I(1))),
     alpha = 2/3,
     color = pal_bac2[1]) +
@@ -100,7 +100,7 @@ p2 = delta_tgr |>
                  color = pal_bac2[2]) +
   geom_node_point(
     aes(
-      size = log(degree),
+      size = degree,
       shape = if_else(degree > quantile(degree, .95), I(19), I(1))),
     alpha = 2/3,
     color = pal_bac2[2]) +
@@ -129,11 +129,14 @@ p1 + p2
 my_ggsave("network", w = 9, h = 4.5)
 
 compare_graphs |>
+  pivot_longer(where(is.numeric),
+               names_to = "metric") |>
+  pivot_wider(names_from = flhc) |>
   gt::gt() |>
   gt::opt_table_font(font = "Arial") |>
   gt::tab_style(style = gt::cell_text(weight = "bold"),
                 locations = gt::cells_column_labels()) |>
-  gt::gtsave("compare_graphs.png")
+  gt::gtsave("compare_graphs2.png")
 
 total_graph =
   bind_rows(list("plus" = flhc_tgr |> as_tibble(),
@@ -185,3 +188,7 @@ nested_propr |>
          weights = propr) |>
   filter(to %in% c("flhC", "flhD") | from %in% c("flhC", "flhD")) |>
   View()
+
+p1 / p2
+
+my_ggsave("network", w = 4.5, h = 9)

@@ -412,13 +412,14 @@ plot_pmr =
   filter(significant, term %in% {{.term}}) |>
   ggplot(aes(y = PGP4,
              x = estimate,
-             alpha = if_else(significant, I(1), I(1/3)),
-             color = if_else(significant, side, "ns"))) +
-  geom_point(shape = 15, size = 3) +
+             color = side)) +
+  geom_point(size = 3,
+             shape = 15,
+             alpha = .8) +
   scale_color_manual(values = pal_bac7) +
   facet_grid(PGP3 ~ ., scales = "free", space = "free",
              labeller = labeller(PGP3 = label_wrap_gen(30))) +
-  theme(strip.text.y = element_text(angle = 0, hjust = 0),
+  theme(strip.text.y = element_text(angle = 0, hjust = 0, size = 14),
         axis.text.y = element_blank(),
         panel.grid.major.y = element_line(linetype = 3,
                                           color = "grey69",
@@ -467,7 +468,6 @@ plot_enrich  =
         strip.clip = "off") +
   scale_color_manual(values = pal_bac7) +
   scale_y_discrete(labels = \(.x) str_wrap(.x, width = 30)) +
-  facet_grid(level ~ ., scales = "free_y", space = "free") +
   scale_alpha(range = c(1/4, 3/4))
   }
 

@@ -46,10 +46,12 @@ ggplot(raw_swimming) +
              position = ggbeeswarm::position_quasirandom()) +
   scale_color_manual(values = pal_bac2) +
   facet_wrap(~ mutant, scales = "free_x") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_shape_manual(values = c(21, 24, 2, 1))
+  theme(axis.text.x = ggtext::element_markdown(angle = 45, hjust = 1)) +
+  scale_shape_manual(values = c(21, 24, 2, 1))  +
+  scale_x_discrete(label = list("Comp_140" = "LR140<sup>_ΔflhC;ΔflhC_</sup>",
+                                "Delta_140" = "LR140<sup>_ΔflhC_</sup>"))
 
-my_ggsave("swimming", 2, 3)
+my_ggsave("swimming_diameter", 2, 3)
 
 # source data -------------------------------------------------------------
 
@@ -286,7 +288,10 @@ plant_growth |>
   scale_shape_manual(values = c(22, 21, 24, 2, 1)) +
   theme(axis.title.y = element_blank(),
         strip.placement = "outside",
-        strip.text.y.left = element_text(hjust = 1))
+        axis.text.x = ggtext::element_markdown(angle = 45, hjust = 1, vjust = 1),
+        strip.text.y.left = element_text(hjust = 1)) +
+  scale_x_discrete(label = list("Comp_140" = "LR140<sup>_ΔflhC;ΔflhC_</sup>",
+                                "Delta_140" = "LR140<sup>_ΔflhC_</sup>"))
 
 
 my_ggsave("growth_data", 4, 6)

@@ -167,7 +167,8 @@ pmr_model =
   separate_rows(PGP5, sep = "; ") |>
   drop_na(PGP5) |>
   filter(n_distinct(Gene) >= 3, .by = PGP5) |>
-  nest(.by = c(PGP5)) |>
+  mutate(n_of_genes = n(), .by = c(PGP5, term)) |>
+  nest(.by = c(PGP5, n_of_genes)) |>
   mutate(mod =
            map(
              data,
@@ -186,7 +187,8 @@ pmr_tidied =
   select(-c(data, mod)) |>
   filter(!term %in% "(Intercept)") |>
   mutate(adjust_Q(p.value, 0.05),
-         term = str_remove(term, "term"),
+         term = str_remove(term, "term") |>
+           factor(levels = c("Expression", "Response", "Regulation")),
          side = case_when(
            term == "Expression" & statistic > 0 ~ "flhC-",
            term == "Response" & statistic > 0 ~ "Lj+Ri",
@@ -218,19 +220,14 @@ my_ggsave("Response", 8, 10)
 
 my_ggsave("Regulation", 8, 8)
 
-c_di_gmp =
-  tidied |>
-  filter(str_detect(str_c(Product, Description) |>
-                      str_to_lower(), "c-di-gmp|diguanylate"))
-c_di_gmp |>
-  count(significant, term, side)
 
-
-my_data |>
-  filter(Gene %in% c("flhD", "ompR")) |>
-  pivot_wider(
-    id_cols = c(sample, flhc, media, strain),
-    names_from = Gene,
-              values_from = lnRatio) |>
-  lm(flhD ~ ompR * flhc, data = _) |> tidy()
-
+#
+# a = plot_volcano(c("Expression", "Response", "Regulation")) +
+#   facet_grid(. ~ term)
+# b = plot_pmr(c("Expression", "Response", "Regulation")) +
+#   facet_grid(PGP3 ~ term, scales = "free_y", space = "free_y")
+#
+# a + b +
+#   plot_layout(heights = c(2/5, 3/5))
+#
+# my_ggsave("volcano_pmr", 8, 10)

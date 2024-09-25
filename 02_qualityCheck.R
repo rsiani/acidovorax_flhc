@@ -31,8 +31,7 @@ kallisto_check =
   map(~jsonlite::read_json(.x) |> as.data.frame()) |>
   list_rbind(names_to = "path") |>
   mutate(sample = str_remove_all(
-    path, "data/kall[0-9]*_[0-9]*/|_S[0-9]*/run_info.json"),
-    date = str_extract(path,"[0-9]{4}"),
+    path, "data/kall[0-9]*/|_S[0-9]*/run_info.json"),
     kmer_size = str_extract(path, "kall[0-9]{2}") |>
       str_extract("[0-9]{2}"))
 
@@ -41,16 +40,16 @@ write_csv(kallisto_check |>
 
 kallisto_check |>
   filter(str_detect(sample, "data", negate = T)) |>
-  select(sample, where(is.numeric), kmer_size, date) |>
+  select(sample, where(is.numeric), kmer_size) |>
   pivot_wider(names_from = kmer_size, values_from = where(is.numeric))
 
 
 summarise(kallisto_check |> filter(str_detect(sample, "x", negate = T)),
           across(where(is.numeric), ~ median(.x)),
-          .by = c(kmer_size, date))
+          .by = kmer_size)
 
 kallisto_check |>
-  ggplot(aes(kmer_size, p_pseudoaligned, group = str_c(sample,date))) +
+  ggplot(aes(kmer_size, p_pseudoaligned, group = sample)) +
   geom_point() +
   geom_path() +
   theme(panel.grid.major.y = element_line(colour = "#555555",

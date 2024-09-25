@@ -2,7 +2,7 @@
 
 source("scripts/00_helperFunctions.R", echo = TRUE)
 
-source("scripts/03_RNAseq_qualityCheck.R")
+source("scripts/02_qualityCheck.R")
 
 # LOADING -----------------------------------------------------------------
 
@@ -31,7 +31,6 @@ metadata =
 
 write_csv(metadata, "metadata.csv")
 
-
 metadata |>
   select(flhc, media, strain, mutant) |>
   distinct() |>
@@ -52,7 +51,10 @@ metadata |>
              size = 5) +
   scale_color_manual(values = pal_growth7) +
   scale_shape_manual(values = c(1, 21, 2, 24, 22)) +
-  facet_wrap(~ mutant, scales = "free_x")
+  facet_wrap(~ mutant, scales = "free_x") +
+  theme(axis.text.x = ggtext::element_markdown(angle = 45, vjust = 1, hjust = 1)) +
+  scale_x_discrete(label = list("Comp_140" = "LR140<sup>_ΔflhC;ΔflhC_</sup>",
+                                "Delta_140" = "LR140<sup>_ΔflhC_</sup>"))
 
 # load lnRatio140 CDS annotation (interproscan)
 
@@ -65,7 +67,6 @@ LR140 =
 LR124 =
   read_annotation("LR124") |>
   left_join(rbh |> select(-LR140), join_by(target_id == LR124))
-
 
 # combine annotations (mmseqs rbh). I also complement gene names and description were missing with PFAMs ID and create some shorter and unique labels for the different genes
 
@@ -112,13 +113,13 @@ cds =
 
 # load kallisto transcript counts data and merge everything in one big ol' table
 
-files = fs::dir_ls("data/kall31_2407/", regexp = "abundance.h5", recurse = 2)
+files = fs::dir_ls("data/kall31/", regexp = "abundance.h5", recurse = 2)
 
 ### import data and pre-select samples
 
 raw_data =
   files |>
-  set_names(str_remove_all(files, "data/kall[0-9]*_[0-9]*/|_S[0-9]*/abundance.h5")) |>
+  set_names(str_remove_all(files, "data/kall[0-9]*/|_S[0-9]*/abundance.h5")) |>
   map(~ tximport::tximport(.x,
                            type = "kallisto",
                            tx2gene = background |> select(target_id, Gene)) |>

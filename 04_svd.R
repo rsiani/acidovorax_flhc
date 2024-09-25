@@ -2,14 +2,6 @@
 ## Roberto Siani
 # 15.02.22
 
-# SETUP -------------------------------------------------------------------
-
-source("scripts/preProcess.R", echo = TRUE)
-
-# FULL - ANALYSES --------------------------------------------------------
-
-# singular value decomposition
-
 plot_flhcd =
   my_data |>
   filter(Gene %in% c("flhC", "flhD")) |>
@@ -25,8 +17,10 @@ plot_flhcd =
                   size = 3/.pt) +
   facet_wrap(~ Gene) +
   scale_color_manual(values = pal_bac4) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_shape_manual(values = c(24, 2, 21, 1))
+  theme(axis.text.x = ggtext::element_markdown(angle = 45, hjust = 1)) +
+  scale_shape_manual(values = c(24, 2, 21, 1))  +
+  scale_x_discrete(label = list("Comp_140" = "LR140<sup>_ΔflhC;ΔflhC_</sup>",
+                                "Delta_140" = "LR140<sup>_ΔflhC_</sup>"))
 
 plot_flhcd
 
@@ -106,13 +100,11 @@ ggcorrplot::ggcorrplot(corr =
 # visualization
 
 plot_svd_nice2(svd_df, 1, 2) +
-  # plot_svd_nice2(svd_df, 2, 3) +
   plot_svd_nice(svd_df2,1, 2) +
   plot_flhcd +
   plot_layout(design = "
               ######CCC
               AAABBBCCC")
-# plot_svd_nice(svd_df2, 2, 3)
 
 my_ggsave("svd", 9, 6)
 
