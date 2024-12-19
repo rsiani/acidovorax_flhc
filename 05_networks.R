@@ -4,7 +4,7 @@
 
 # network --------------------------------------------------------------------
 
-summarise(my_data, n_distinct(sample), .by = c(flhc, strain))
+summarise(my_data, n_distinct(sample), .by = c(flhc, strain, media))
 
 my_data |>
   slice_min(sparsity, n = 14, by = c(Gene, flhc)) |>
@@ -94,13 +94,14 @@ p1 =
       shape = if_else(degree > quantile(degree, .95), I(19), I(1))),
     alpha = 2/3,
     color = pal_bac2[1]) +
-  geom_node_text(data = ~filter(.x, name %in% c("flhC", "flhD")),
+  geom_node_text(data = ~filter(.x, name %in% c("flhC")),
                  aes(label = name),
-                 size = 12/.pt,
+                 size = 15/.pt,
+                 fontface = "italic",
                  color = "#555555") +
-  theme_graph(plot_margin = margin(0, 0, 0, 0)) +
-  theme(legend.position = "none") +
-  scale_size(range = c(0.1, 1.5))
+  theme(legend.position = "none",
+        plot.margin = unit(c(0, 0, 0, 0), "lines")) +
+  scale_size(range = c(1, 2))
 
 p2 = delta_tgr |>
   ggraph(layout = "nicely") +
@@ -113,13 +114,14 @@ p2 = delta_tgr |>
       shape = if_else(degree > quantile(degree, .95), I(19), I(1))),
     alpha = 2/3,
     color = pal_bac2[2]) +
-  geom_node_text(data = ~filter(.x, name %in% c("flhC", "flhD")),
+  geom_node_text(data = ~filter(.x, name %in% c("flhC")),
                  aes(label = name),
-                 size = 12/.pt,
+                 size = 15/.pt,
+                 fontface = "italic",
                  color = "#555555") +
-  theme_graph(plot_margin = margin(0, 0, 0, 0)) +
-  theme(legend.position = "none") +
-  scale_size(range = c(0.1, 1.5))
+  theme(legend.position = "none",
+        plot.margin = unit(c(0, 0, 0, 0), "lines")) +
+  scale_size(range = c(1, 2))
 
 # table of graph properties
 
@@ -144,11 +146,21 @@ my_ggsave("network", w = 9, h = 4.5)
 compare_graphs |>
   pivot_longer(where(is.numeric),
                names_to = "metric") |>
+  mutate(flhc = str_c("*", flhc, "*")) |>
   pivot_wider(names_from = flhc) |>
+  mutate(metric = case_match(metric,
+                             "order" ~ "N. of Genes",
+                             "size" ~ "N. of Associations",
+                             "modularity" ~ "Modularity",
+                             "degree" ~ "Avg. N. of Associations x Gene",
+                             "n_groups" ~ "N. of Groups",
+                             "efficiency" ~ "Efficiency")) |>
   gt::gt() |>
-  gt::opt_table_font(font = "Arial") |>
+  gt::opt_table_font(font = "Arial", size = 20) |>
   gt::tab_style(style = gt::cell_text(weight = "bold"),
                 locations = gt::cells_column_labels()) |>
+  gt::fmt_number(drop_trailing_zeros = T) |>
+  gt::cols_label_with(fn = \(.x) gt::md(.x)) |>
   gt::gtsave("compare_graphs2.png")
 
 # clustering
@@ -192,7 +204,7 @@ overrepp =
 # we are only really interested in cluster flhDC
 
 overrepp |>
-  filter(group == 2, significant) |> View()
+  filter(group == 2, significant)
 
 # how are cluster flhDC genes grouped in flhC-
 
@@ -200,7 +212,57 @@ total_graph |>
   filter(group_plus == 2) |>
   count(group_minus) |> print(n = 26)
 
+p_load(ggrepel)
+
+flhc_tgr |>
+  filter(group == 2) |>
+  ggraph("backbone") +
+  geom_edge_density(fill = pal_bac4[2]) +
+  geom_edge_bundle_path(aes(alpha = abs(weights)),
+                 color = pal_bac2[1]) +
+  geom_node_point(
+    aes(
+      size = degree,
+      shape = if_else(degree > quantile(degree, .95), I(19), I(1))),
+    alpha = 2/3,
+    color = pal_bac2[1]) +
+  geom_node_text(data = ~filter(.x, !is.na(gene_extract(name))),
+                 aes(label = name),
+                 size = 20/.pt,
+                 fontface = "italic",
+                 color = "#555555",
+                 repel = T) +
+  theme(legend.position = "none",
+        plot.margin = unit(c(0, 0, 0, 0), "lines")) +
+  scale_size(range = c(1, 2))
+
+my_ggsave("sub_network", 9, 9)
+
+# my_data |>
+#   filter(Gene %in% cluster_flhdc) |>
+#   select(Gene, PGP4) |>
+#   distinct() |>
+#   separate_longer_delim(PGP4, "; ") |>
+#   drop_na(PGP4) |>
+#   mutate(PGP4 = as.factor(PGP4) |>
+#            fct_infreq()) |>
+#   filter(n() > 3, .by = PGP4) |>
+#   ggplot() +
+#   geom_bar(aes(y = PGP4, fill = after_stat(count))) +
+#   scale_fill_fermenter(palette = "BuPu", direction = 1)
 #
-# p1 / p2
+# my_data |>
+#   filter(Gene %in% cluster_flhdc) |>
+#   group_by(flhc_media) |>
+#   tidyHeatmap::heatmap(.row = Gene,
+#                        .column = sample,
+#                        .value = lnRatio,
+#                        scale = "row",
+#                        cluster_columns = T,
+#                        clustering_method_rows = "ward.D2",
+#                        palette_grouping = list(pal_bac4),
+#                        palette_value = circlize::colorRamp2(c(-4, -2, -1, 0, 1, 2, 4),
+#                                                             viridis::magma(7))) |>
+#   tidyHeatmap::add_tile(strain, palette = c("grey33", "grey66", "grey33", "grey66"))
 #
-# my_ggsave("network", w = 4.5, h = 9)
+# my_ggsave("heatmap", 15, 15)

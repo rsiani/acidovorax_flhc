@@ -2,6 +2,18 @@
 ## Roberto Siani
 # 2024
 
+# # interproscan annotation
+#
+# ~/00_lib/interproscan-5.64-96.0/interproscan.sh -cpu 7 -i LR140.faa -b pfamLR140 -dra -appl Pfam
+# ~/00_lib/interproscan-5.64-96.0/interproscan.sh -cpu 7 -i LR124.faa -b pfamLR124 -dra -appl Pfam
+#
+# # reciprocal best hit
+#
+# mmseqs easy-rbh LR140.ffn LR124.ffn -s 7.5 --search-type 3 rbh.tsv tmp --format-output query,target,evalue,pident,alnlen
+# mmseqs easy-rbh LR140.ffn LR124.ffn -s 7.5 --search-type 3 rbh.tsv tmp --format-output query,target,evalue,pident,alnlen --translation-table 11
+
+
+
 # load libraries
 
 pacman::p_load(pacman, tidyverse, patchwork,
@@ -14,14 +26,13 @@ theme_set(
   theme_minimal() +
     theme(
       plot.margin = margin(3, 3, 3, 3),
-      text = element_text(size = 12,
-                          family = "Arial",
+      text = element_text(size = 15,
+                          family = "Fira Sans",
                           color = "#555555"),
       panel.grid = element_blank(),
       axis.line = element_line(color = "#555555", linewidth = .5),
       axis.ticks = element_line(color = "#555555", linewidth = .5),
       axis.title = element_text(hjust = 1),
-      strip.text = element_text(face = "bold"),
       legend.position = "none",
       legend.title = element_blank(),
       panel.spacing.x = unit(.5, "lines"),
@@ -207,14 +218,20 @@ pal_growth7 = c("control Lj"= "#8BC34A",
             "flhC+ Lj+Ri" = "#FFBC79",
             "flhC- Lj" = "#1170AA",
             "flhC- Lj+Ri" = "#A3CCE9",
-            "ns" = "grey75")
+            "ns" = "grey75",
+            "Ri" = "#E1BEE7",
+            "flhC+" =  "#FC7D0B",
+            "flhC+ & Ri" = "#FFBC79",
+            "flhC-" = "#1170AA",
+            "flhC- & Ri" =  "#A3CCE9")
 
 pal_shape =
   c("LR140" = 21,
     "Comp_140" = 1,
     "LR124" = 24,
     "Delta_140" = 2,
-    "media" = 15)
+    "media" = 15,
+    "control" = 15)
 
 # summarize fastp reports
 
@@ -286,13 +303,25 @@ plot_volcano =
     aes(label = Gene),
     geom = "text_repel",
     color = "#555555",
+    fontface = "italic",
     keep.fraction = 0.05,
     max.overlaps = 50, force_pull = 0.5) +
   ggpp::stat_group_counts(size = 10/.pt,
                           aes(label = sprintf("%i",
                                               after_stat(count))),
                           parse = T) +
-  scale_color_manual(values = pal_bac7)}
+      scale_color_manual(values = pal_bac7,
+                         label = list("flhC+" = "_flhC_+",
+                                      "flhC-" = "_flhC_-",
+                                      "flhC+ Lj+Ri" = "_flhC_+ _Lj_+_Ri_",
+                                      "flhC- Lj+Ri" = "_flhC_- _Lj_+_Ri_",
+                                      "Lj" = "_Lj_",
+                                      "Lj+Ri" = "_Lj_+_Ri_")) +
+      theme(legend.position = "left",
+            legend.text = ggtext::element_markdown(size = 10)) +
+      guides(colour = guide_legend(override.aes = list(size = 5))) +
+      scale_x_continuous(name = "Log Fold Change")
+  }
 
 # pathway analysis
 
@@ -309,13 +338,14 @@ plot_pmr =
   scale_color_manual(values = pal_bac7) +
   facet_grid(PGP3 ~ ., scales = "free", space = "free",
              labeller = labeller(PGP3 = label_wrap_gen(30))) +
-  theme(strip.text.y = element_text(angle = 0, hjust = 0, size = 14),
+  theme(strip.text.y = element_text(angle = 0, hjust = 0, size = 10),
         axis.text.y = element_blank(),
         panel.grid.major.y = element_line(linetype = 3,
                                           color = "grey69",
                                           linewidth = 0.2),
-        strip.clip = "off")
-    }
+        strip.clip = "off") +
+      scale_x_continuous(name = "Log Fold Change")
+  }
 
 # representation of terms
 
@@ -346,7 +376,6 @@ plot_enrich  =
         axis.ticks.y = element_blank(),
         axis.title.y = element_blank(),
         axis.line.x = element_blank(),
-        axis.title.x = element_blank(),
         panel.grid.major.x = element_line(linewidth = .5,
                                           linetype = 3,
                                           color = "#555555"),
@@ -360,7 +389,8 @@ plot_enrich  =
         strip.clip = "off") +
   scale_color_manual(values = pal_bac7) +
   scale_y_discrete(labels = \(.x) str_wrap(.x, width = 30)) +
-  scale_alpha(range = c(1/4, 3/4))
+  scale_alpha(range = c(1/4, 3/4)) +
+  scale_x_continuous(name = "N. of differentially expressed genes")
   }
 
 # model testing for the variance parameters

@@ -69,7 +69,6 @@ LR140 =
   read_annotation("LR140") |>
   left_join(rbh |> select(-LR124), join_by(target_id == LR140))
 
-
 LR124 =
   read_annotation("LR124") |>
   left_join(rbh |> select(-LR140), join_by(target_id == LR124))
@@ -107,7 +106,9 @@ uniques =
   drop_na(value) |>
   pull(value)
 
-filter(background, target_id %in% uniques)
+filter(background, target_id %in% uniques) |>
+  select(target_id, Gene, Product, InterPro, Pfam, Description) |>
+  gt::gt()
 
 # to preserve only coding sequences
 
@@ -125,7 +126,7 @@ cds =
 
 files = fs::dir_ls("data/kall31/", regexp = "abundance.h5", recurse = 2)
 
-### import data, remove non CDS and negative samples
+# import data, remove non CDS and negative samples
 
 raw_data =
   files |>

@@ -2,8 +2,6 @@
 ## Roberto Siani
 # 2024
 
-source("scripts/preProcess.R")
-
 # model --------------------------------------------------------------------
 
 # mixed-effects models
@@ -47,17 +45,17 @@ tidied =
   filter(!term %in% "(Intercept)") |>
   mutate(adjust_Q(p.value, 0.05),
          term = case_match(term,
-                           "flhcflhC-" ~ "Expression",
-                           "mediaLj+Ri" ~ "Response",
-                           "flhcflhC-:mediaLj+Ri" ~ "Regulation") |>
-           factor(levels = c("Expression", "Response", "Regulation")),
+                           "flhcflhC-" ~ "flhC+ vs flhC-",
+                           "mediaLj+Ri" ~ "Lj+Ri vs Lj",
+                           "flhcflhC-:mediaLj+Ri" ~ "Lj+Ri: flhC+ vs flhC-") |>
+           factor(levels = c("flhC+ vs flhC-", "Lj+Ri vs Lj", "Lj+Ri: flhC+ vs flhC-")),
          side = case_when(
-           term == "Expression" & statistic > 0 ~ "flhC-",
-           term == "Response" & statistic > 0 ~ "Lj+Ri",
-           term == "Regulation" & statistic > 0 ~ "flhC- Lj+Ri",
-           term == "Expression" & statistic < 0 ~ "flhC+",
-           term == "Response" & statistic < 0 ~ "Lj",
-           term == "Regulation" & statistic < 0 ~ "flhC+ Lj+Ri") |>
+           term == "flhC+ vs flhC-" & statistic > 0 ~ "flhC-",
+           term == "Lj+Ri vs Lj" & statistic > 0 ~ "Lj+Ri",
+           term == "Lj+Ri: flhC+ vs flhC-" & statistic > 0 ~ "flhC- Lj+Ri",
+           term == "flhC+ vs flhC-" & statistic < 0 ~ "flhC+",
+           term == "Lj+Ri vs Lj" & statistic < 0 ~ "Lj",
+           term == "Lj+Ri: flhC+ vs flhC-" & statistic < 0 ~ "flhC+ Lj+Ri") |>
            factor(levels = c("flhC+", "flhC-", "Lj", "Lj+Ri",
                              "flhC+ Lj+Ri", "flhC- Lj+Ri")))
 
@@ -65,7 +63,7 @@ tidied |>
   janitor::tabyl(side, significant)
 
 tidied |>
-  janitor::tabyl(side)
+  janitor::tabyl(term)
 
 
 # upset plot -------------------------------------------------------------
@@ -74,16 +72,15 @@ upset_df =
   tidied |>
   filter(significant) |>
   mutate(DEG = 1,
-         side = str_c(term, side, sep = ": "),
-         PMRs = if_else(is.na(PGP), "", "PMR")) |>
-  pivot_wider(id_cols = c(Gene, PMRs),
+         PGPs = if_else(is.na(PGP), "", "PGP")) |>
+  pivot_wider(id_cols = c(Gene, PGPs),
               names_from = side, values_from = DEG, values_fill = list(DEG = 0)) |>
   as.data.frame()
 
 sets =
-  c("Regulation: flhC+ Lj+Ri", "Regulation: flhC- Lj+Ri",
-    "Response: Lj", "Response: Lj+Ri",
-    "Expression: flhC+", "Expression: flhC-")
+  c("flhC+ Lj+Ri", "flhC- Lj+Ri",
+    "Lj", "Lj+Ri",
+    "flhC+", "flhC-")
 
 meta_for_sets =
   data.frame(
@@ -95,11 +92,11 @@ pal_sets =
   c(pal_bac4[c(2,4)], "grey80", "grey90", pal_bac4[c(1,3)]) |>
   set_names(sets)
 
-png("upset.png",width = 6, height = 3, res = 300, units = "in")
+svg("figures/upset.svg",width = 6, height = 3)
 UpSetR::upset(upset_df,
-              nintersects = 15,
+              nintersects = 10,
               sets = sets,
-              text.scale = c(1, 1, 1, 1, 1, 1.5),
+              text.scale = c(1.5, 1.5, 1.5, 1.5, 1.5, 1.5),
               order.by = "freq",
               mb.ratio = c(0.5, 0.5),
               keep.order = T,
@@ -107,16 +104,16 @@ UpSetR::upset(upset_df,
               line.size = 1,
               set_size.show= T,
               set_size.scale_max = 650,
-              sets.bar.color = pal_sets,
+              sets.bar.color = pal_bac7[c(4, 6,1,2,3,5)],
               matrix.color = "grey40",
               main.bar.color = "grey80",
               query.legend = "top",
               queries = list(
                 list(query = UpSetR::elements,
-                     params = list("PMRs", "PMR"),
+                     params = list("PGPs", "PGP"),
                      color = "grey40",
                      active = T,
-                     query.name = "PMRs")),
+                     query.name = "PGPs")),
               set.metadata =
                 list(
                   data = meta_for_sets,
@@ -124,7 +121,7 @@ UpSetR::upset(upset_df,
                     list(type = "matrix_rows",
                          column = "sets",
                          alpha = 1,
-                         colors = pal_sets))))
+                         colors = pal_bac7))))
 dev.off()
 
 
@@ -187,17 +184,17 @@ pmr_tidied =
   unnest(tidied) |>
   hoist(data, "Gene") |>
   select(-c(data, mod)) |>
-  filter(!term %in% "(Intercept)") |>
+  filter(!term %in% "(Intercept)")|>
   mutate(adjust_Q(p.value, 0.05),
          term = str_remove(term, "term") |>
-           factor(levels = c("Expression", "Response", "Regulation")),
+           factor(levels = c("flhC+ vs flhC-", "Lj+Ri vs Lj", "Lj+Ri: flhC+ vs flhC-")),
          side = case_when(
-           term == "Expression" & statistic > 0 ~ "flhC-",
-           term == "Response" & statistic > 0 ~ "Lj+Ri",
-           term == "Regulation" & statistic > 0 ~ "flhC- Lj+Ri",
-           term == "Expression" & statistic < 0 ~ "flhC+",
-           term == "Response" & statistic < 0 ~ "Lj",
-           term == "Regulation" & statistic < 0 ~ "flhC+ Lj+Ri") |>
+           term == "flhC+ vs flhC-" & statistic > 0 ~ "flhC-",
+           term == "Lj+Ri vs Lj" & statistic > 0 ~ "Lj+Ri",
+           term == "Lj+Ri: flhC+ vs flhC-" & statistic > 0 ~ "flhC- Lj+Ri",
+           term == "flhC+ vs flhC-" & statistic < 0 ~ "flhC+",
+           term == "Lj+Ri vs Lj" & statistic < 0 ~ "Lj",
+           term == "Lj+Ri: flhC+ vs flhC-" & statistic < 0 ~ "flhC+ Lj+Ri") |>
            factor(levels = c("flhC+", "flhC-", "Lj", "Lj+Ri",
                              "flhC+ Lj+Ri", "flhC- Lj+Ri"))) |>
   left_join(all_pgp |>
@@ -207,21 +204,21 @@ pmr_tidied =
 
 # plotting ----------------------------------------------------------------
 
-(plot_volcano("Expression") /
-  plot_enrich("Expression")) |
-  plot_pmr("Expression")
+(free(plot_volcano("flhC+ vs flhC-")) /
+  plot_enrich("flhC+ vs flhC-")) |
+  plot_pmr("flhC+ vs flhC-")
 
 my_ggsave("expression", 8, 8)
 
-(plot_volcano("Response") /
-    plot_enrich("Response")) |
-  plot_pmr("Response")
+(free(plot_volcano("Lj+Ri vs Lj")) /
+    plot_enrich("Lj+Ri vs Lj")) |
+  plot_pmr("Lj+Ri vs Lj")
 
 my_ggsave("Response", 8, 10)
 
-(plot_volcano("Regulation") /
-    plot_enrich("Regulation")) |
-  plot_pmr("Regulation")
+(free(plot_volcano("Lj+Ri: flhC+ vs flhC-")) /
+    plot_enrich("Lj+Ri: flhC+ vs flhC-")) |
+  plot_pmr("Lj+Ri: flhC+ vs flhC-")
 
 my_ggsave("Regulation", 8, 8)
 

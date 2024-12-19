@@ -2,6 +2,7 @@
 ## Roberto Siani
 # 15.02.22
 
+
 plot_flhcd =
   my_data |>
   filter(Gene %in% c("flhC", "flhD")) |>
@@ -16,15 +17,46 @@ plot_flhcd =
                   shape = 95,
                   size = 3/.pt) +
   facet_wrap(~ Gene) +
-  scale_color_manual(values = pal_bac4) +
-  theme(axis.text.x = ggtext::element_markdown(angle = 45, hjust = 1)) +
-  scale_shape_manual(values = pal_shape)  +
+  scale_color_manual(values = pal_bac4,
+                     label = list("flhC+ Lj" = "_flhC_+ _Lj_",
+                                  "flhC- Lj" = "_flhC_- _Lj_",
+                                  "flhC+ Lj+Ri" = "_flhC_+ _Lj_+_Ri_",
+                                  "flhC- Lj+Ri" = "_flhC_- _Lj_+_Ri_")) +
+  theme(axis.text.x = ggtext::element_markdown(angle = 45, hjust = 1),
+        legend.position = "bottom",
+        legend.justification = "right",
+        legend.text = ggtext::element_markdown(size = 12)) +
+  scale_shape_manual(values = pal_shape,
+                     label = list("Comp_140" = "LR140<sup>_ΔflhC;ΔflhC_</sup>",
+                          "Delta_140" = "LR140<sup>_ΔflhC_</sup>"))  +
   scale_x_discrete(label = list("Comp_140" = "LR140<sup><i>ΔflhC;ΔflhC</i></sup>",
-                                "Delta_140" = "LR140<sup>_ΔflhC_</sup>"))
+                                "Delta_140" = "LR140<sup>_ΔflhC_</sup>")) +
+  scale_y_continuous(name = "Log Ratio") +
+  guides(colour = guide_legend(override.aes = list(size = 5)),
+         shape = guide_legend(override.aes = list(size = 5)))
 
 plot_flhcd
 
 my_ggsave("flhcd_diff", 3, 3)
+
+# testing media differences
+
+mod = my_data |>
+  filter(Gene %in% c("flhC", "flhD")) |>
+  lme(lnRatio ~ flhc * media * Gene,
+      weights = varComb(varIdent(form = ~ 1 | flhc),
+                        varFixed(~ tech_var)),
+      random = ~ 1 | strain,
+      data =  _)
+
+
+marginaleffects::comparisons(mod,
+                             variables = "media",
+                               by = c("flhc", "Gene"),
+                               p_adjust = "BH") |>
+  tidy()
+
+
 
 # singular value decomposition (wildtype only)
 
