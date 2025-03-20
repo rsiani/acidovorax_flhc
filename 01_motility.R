@@ -30,11 +30,11 @@ raw_swimming =
       "Comp_140" ~ "Mutant") |>
       factor(levels = c("Wildtype", "Mutant"))) |>
   pivot_longer(starts_with("Rep"),
-               values_to = "length [mm]")
+               values_to = "diameter [mm]")
 
 ggplot(raw_swimming) +
   geom_point(aes(x = Strain,
-                 y = `length [mm]`,
+                 y = `diameter [mm]`,
                  # ymin = `length [mm]` - std.dev,
                  # ymax = `length [mm]` + std.dev,
                  shape = Strain,
@@ -60,6 +60,6 @@ ggplot(raw_swimming) +
   guides(colour = guide_legend(override.aes = list(size = 4)),
          shape = guide_legend(override.aes = list(size = 4)))
 
-my_ggsave("swimming_diameter", 7, 8.5)
+my_ggsave("swimming_diameter", 3, 3.5)
 
 

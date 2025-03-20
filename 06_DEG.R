@@ -66,6 +66,10 @@ tidied |>
   janitor::tabyl(term)
 
 
+tidied |>
+  select(Gene, Product, term, estimate, std.error, df, statistic, p.value, q.value, s.value, lfdr, significant, side) |>
+  write_csv("SupplementaryData1.csv")
+
 # upset plot -------------------------------------------------------------
 
 upset_df =
@@ -100,6 +104,8 @@ UpSetR::upset(upset_df,
               order.by = "freq",
               mb.ratio = c(0.5, 0.5),
               keep.order = T,
+              sets.x.label = "N. of DEGs",
+              mainbar.y.label = "N. of shared DEGs",
               point.size = 2,
               line.size = 1,
               set_size.show= T,
@@ -141,7 +147,7 @@ dataset_enrich =
            str_replace_all("plant vitamin|root vitamin", "vitamin")) |>
   separate_rows(category, sep = "; ") |>
   filter(str_detect(category, "putative", negate = T),
-         level %in% c("PGP2", "PGP3", "PGP4")) |>
+         level %in% c("PGP2")) |>
   distinct() |>
   count(category, side, level, term) |>
   mutate(side_generic = case_when(
@@ -152,9 +158,18 @@ dataset_enrich =
                                                          side)) |>
   replace_na(list(`n_one` = 0,
                   `n_two` = 0)) |>
-  mutate(diff = abs(`n_one` - `n_two`),
-         tot = `n_one` + `n_two`)
+  mutate(total = `n_one` + `n_two`,
+         rel_one = n_one/total,
+         rel_two = n_two/total,
+         difference = abs(`rel_one` - `rel_two`))
 
+background_short |>
+  filter(level %in% "PGP2") |>
+  count(category)
+
+
+dataset_enrich |>
+  write_csv("SupplementaryData2.csv")
 
 # pathway analysis --------------------------------------------------------
 
@@ -176,6 +191,8 @@ pmr_model =
                estimate ~ 0 + term,
                weights = ~ std.error ^ 2,
                data = .x)))
+
+
 
 pmr_tidied =
   pmr_model |>
@@ -201,6 +218,8 @@ pmr_tidied =
               select(PGP1, PGP2, PGP3, PGP4, PGP5) |>
               distinct())
 
+pmr_tidied |>
+  write_csv("SupplementaryData3.csv")
 
 # plotting ----------------------------------------------------------------
 
@@ -208,7 +227,7 @@ pmr_tidied =
   plot_enrich("flhC+ vs flhC-")) |
   plot_pmr("flhC+ vs flhC-")
 
-my_ggsave("expression", 8, 8)
+my_ggsave("expression", 8, 10)
 
 (free(plot_volcano("Lj+Ri vs Lj")) /
     plot_enrich("Lj+Ri vs Lj")) |
@@ -220,7 +239,7 @@ my_ggsave("Response", 8, 10)
     plot_enrich("Lj+Ri: flhC+ vs flhC-")) |
   plot_pmr("Lj+Ri: flhC+ vs flhC-")
 
-my_ggsave("Regulation", 8, 8)
+my_ggsave("Regulation", 8, 10)
 
 
 #

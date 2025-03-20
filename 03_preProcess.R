@@ -95,7 +95,10 @@ background =
                  .default = str_remove_all(Product, "[:punct:]") |>
                    str_to_lower() |>
                    abbreviate())),
-    descr = str_c(Product, Description) |> str_to_lower())
+    descr = str_c(Product, Description) |> str_to_lower()) |>
+  arrange(IDX)
+
+write_csv(background, "SupplementaryData4.csv")
 
 # 5 gene difference between LR124 and LR140
 
@@ -108,7 +111,7 @@ uniques =
 
 filter(background, target_id %in% uniques) |>
   select(target_id, Gene, Product, InterPro, Pfam, Description) |>
-  gt::gt()
+  write_csv("supp_table1.csv")
 
 # to preserve only coding sequences
 

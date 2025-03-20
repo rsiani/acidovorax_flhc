@@ -353,24 +353,26 @@ plot_enrich  =
   function(.term) {
   dataset_enrich |>
   filter(term %in% {{.term}}, level %in% c("PGP2")) |>
-  slice_max(diff, n = 10, by = term) |>
+  slice_max(difference, n = 10, by = term) |>
   pivot_longer(contains("_"),
                names_to = c(".value", "side_generic"),
                names_sep = "_") |>
+  mutate(category = as.factor(category) |>
+           fct_reorder(difference)) |>
   ggplot() +
   geom_segment(data = ~
                  pivot_wider(.x,
-                             id_cols = c(category, level, term, diff),
-                             names_from = side_generic, values_from = n),
+                             id_cols = c(category, level, term, difference),
+                             names_from = side_generic, values_from = rel),
                aes(x = one,
                    xend = two,
-                   color = diff,
+                   color = difference,
                    y = category,
-                   alpha = diff,
+                   alpha = difference,
                    yend = category),
                linewidth = 3, color = "#a1a1a1",
                show.legend = F) +
-  geom_point(aes(x = n, y = category, color = side),
+  geom_point(aes(x = rel, y = category, color = side),
              size = 3) +
   theme(axis.line.y = element_blank(),
         axis.ticks.y = element_blank(),

@@ -2,6 +2,32 @@
 ## Roberto Siani
 # 15.02.22
 
+# testing media differences
+
+mod = my_data |>
+  filter(Gene %in% c("flhC", "flhD")) |>
+  lme(lnRatio ~ flhc * media * Gene,
+      weights = varComb(varIdent(form = ~ 1 | flhc),
+                        varFixed(~ tech_var)),
+      random = ~ 1 | strain,
+      data =  _)
+
+
+comp = marginaleffects::comparisons(mod,
+                                    variables = "media",
+                                    by = c("flhc", "Gene"))
+
+
+pval_df = marginaleffects::hypotheses(comp, multcomp = "BH") |> tidy() |>
+  mutate(flhc = c("flhC+", "flhC+", "flhC-", "flhC-"),
+         Gene = c("flhC", "flhD", "flhC", "flhD"),
+         contrast = c("Lj+Ri - Lj"),
+         strain = c("LR140", "LR140", "LR124", "LR124"),
+         lnRatio = 5)
+
+
+
+
 
 plot_flhcd =
   my_data |>
@@ -16,6 +42,11 @@ plot_flhcd =
                   position = position_dodge(width = 0.75),
                   shape = 95,
                   size = 3/.pt) +
+  geom_text(data = pval_df,
+            color = "#555555",
+            nudge_x = 0.5,
+            size = 15/.pt,
+            aes(label = format(p.value, scientific = T, digits = 2))) +
   facet_wrap(~ Gene) +
   scale_color_manual(values = pal_bac4,
                      label = list("flhC+ Lj" = "_flhC_+ _Lj_",
@@ -25,6 +56,7 @@ plot_flhcd =
   theme(axis.text.x = ggtext::element_markdown(angle = 45, hjust = 1),
         legend.position = "bottom",
         legend.justification = "right",
+        strip.text = element_text(face = "italic"),
         legend.text = ggtext::element_markdown(size = 12)) +
   scale_shape_manual(values = pal_shape,
                      label = list("Comp_140" = "LR140<sup>_ΔflhC;ΔflhC_</sup>",
@@ -37,26 +69,7 @@ plot_flhcd =
 
 plot_flhcd
 
-my_ggsave("flhcd_diff", 3, 3)
-
-# testing media differences
-
-mod = my_data |>
-  filter(Gene %in% c("flhC", "flhD")) |>
-  lme(lnRatio ~ flhc * media * Gene,
-      weights = varComb(varIdent(form = ~ 1 | flhc),
-                        varFixed(~ tech_var)),
-      random = ~ 1 | strain,
-      data =  _)
-
-
-marginaleffects::comparisons(mod,
-                             variables = "media",
-                               by = c("flhc", "Gene"),
-                               p_adjust = "BH") |>
-  tidy()
-
-
+my_ggsave("flhcd_diff", 2.5, 5)
 
 # singular value decomposition (wildtype only)
 
