@@ -219,11 +219,10 @@ pal_growth7 = c("control Lj"= "#8BC34A",
             "flhC- Lj" = "#1170AA",
             "flhC- Lj+Ri" = "#A3CCE9",
             "ns" = "grey75",
-            "Ri" = "#E1BEE7",
+            "Lj" = "#8BC34A",
+            "Lj+Ri" = "#E1BEE7",
             "flhC+" =  "#FC7D0B",
-            "flhC+ & Ri" = "#FFBC79",
-            "flhC-" = "#1170AA",
-            "flhC- & Ri" =  "#A3CCE9")
+            "flhC-" = "#1170AA")
 
 pal_shape =
   c("LR140" = 21,
