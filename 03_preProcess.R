@@ -6,9 +6,10 @@ source("scripts/00_helperFunctions.R")
 
 # LOADING -----------------------------------------------------------------
 
-metadata =
+metadata <-
   read_tsv("data/metadata.csv",
-           name_repair = "universal") |>
+    name_repair = "universal"
+  ) |>
   transmute(
     sample = str_c("R", sample) |> as.factor(),
     strain = factor(strain, levels = c("LR124", "Delta_140", "LR140", "Comp_140")),
@@ -19,15 +20,19 @@ metadata =
       "LR124" ~ "flhC-",
       "LR140" ~ "flhC+",
       "Delta_140" ~ "flhC-",
-      "Comp_140" ~ "flhC+") |>
+      "Comp_140" ~ "flhC+"
+    ) |>
       factor(levels = c("flhC+", "flhC-")),
     flhc_media = paste(flhc, media) |> factor(
-      levels = c("flhC+ Lj", "flhC+ Lj+Ri", "flhC- Lj", "flhC- Lj+Ri")),
+      levels = c("flhC+ Lj", "flhC+ Lj+Ri", "flhC- Lj", "flhC- Lj+Ri")
+    ),
     mutant = case_match(strain,
-                        "LR140" ~ "Wildtype",
-                        "LR124" ~ "Wildtype",
-                        .default = "Mutant") |>
-      factor(levels = c("Wildtype", "Mutant")))
+      "LR140" ~ "Wildtype",
+      "LR124" ~ "Wildtype",
+      .default = "Mutant"
+    ) |>
+      factor(levels = c("Wildtype", "Mutant"))
+  )
 
 # write_csv(metadata, "metadata.csv")
 
@@ -37,72 +42,96 @@ metadata |>
   select(flhc, media, strain, mutant) |>
   distinct() |>
   drop_na(flhc) |>
-  add_row(flhc = c("control", "control"),
-          media = c("Lj", "Lj+Ri"),
-          strain = c("media", "media"),
-          mutant=  c("media", "media")) |>
-  mutate(strain = factor(strain, levels = c("LR140",
-                                            "Comp_140",
-                                            "LR124",
-                                            "Delta_140",
-                                            "media")),
-         mutant = factor(mutant, levels = c("Wildtype", "Mutant", "media")),
-         media = factor(media, levels = c("Lj+Ri", "Lj"))) |>
+  add_row(
+    flhc = c("control", "control"),
+    media = c("Lj", "Lj+Ri"),
+    strain = c("media", "media"),
+    mutant = c("media", "media")
+  ) |>
+  mutate(
+    strain = factor(strain, levels = c(
+      "LR140",
+      "Comp_140",
+      "LR124",
+      "Delta_140",
+      "media"
+    )),
+    mutant = factor(mutant, levels = c("Wildtype", "Mutant", "media")),
+    media = factor(media, levels = c("Lj+Ri", "Lj"))
+  ) |>
   ggplot() +
-  geom_point(aes(y = strain, x = media, color = str_c(flhc, media, sep = " "),
-                 fill = after_scale(color),
-                 shape = strain),
-             size = 5) +
+  geom_point(
+    aes(
+      y = strain, x = media, color = str_c(flhc, media, sep = " "),
+      fill = after_scale(color),
+      shape = strain
+    ),
+    size = 5
+  ) +
   scale_color_manual(values = pal_growth7) +
   scale_shape_manual(values = pal_shape) +
   facet_grid(mutant ~ ., scales = "free_y") +
-  theme(axis.text.y = ggtext::element_markdown(),
-        axis.title = element_blank()) +
-  scale_y_discrete(label = list("Comp_140" = "LR140<sup>_ΔflhC;ΔflhC_</sup>",
-                                "Delta_140" = "LR140<sup>_ΔflhC_</sup>"))
+  theme(
+    axis.text.y.left = marquee::element_marquee(),
+    axis.title = element_blank()
+  ) +
+  scale_y_discrete(labels = c(
+    "LR124",
+    "LR140",
+    "Comp_140" = "LR140{.sup *ΔflhC;ΔflhC*}",
+    "Delta_140" = "LR140{.sup *ΔflhC*}",
+    "media"
+  ))
 
 my_ggsave("legend", 2, 3)
 
 # load annotations (Bakta/Pfam/PLABase)
 
-LR140 =
+LR140 <-
   read_annotation("LR140") |>
   left_join(rbh |> select(-LR124), join_by(target_id == LR140))
 
-LR124 =
+LR124 <-
   read_annotation("LR124") |>
   left_join(rbh |> select(-LR140), join_by(target_id == LR124))
 
 # combine annotations (mmseqs rbh). I also complement gene names and description were missing with PFAMs ID and create some shorter and unique labels for the different genes
 
-background =
+background <-
   bind_rows(LR124, LR140) |>
   mutate(
-    Product = na_if(Product,
-                    "hypothetical protein") |>
-    coalesce(Description) |>
+    Product = na_if(
+      Product,
+      "hypothetical protein"
+    ) |>
+      coalesce(Description) |>
       coalesce(paste0("hp.", ifelse(is.na(IDX), row_number(),
-                                    IDX))),
+        IDX
+      ))),
     Gene =
-      coalesce(Gene,
-               case_when(
-                 !is.na(gene_extract(Product)) ~
-                   gene_extract(Product),
-                 !is.na(gene_extract(Description)) ~
-                   gene_extract(Description),
-                 str_count(Product, "\\w+") == 1 ~ Product,
-                 str_count(Description, "\\w+") == 1 ~ Description,
-                 .default = str_remove_all(Product, "[:punct:]") |>
-                   str_to_lower() |>
-                   abbreviate())),
-    descr = str_c(Product, Description) |> str_to_lower()) |>
+      coalesce(
+        Gene,
+        case_when(
+          !is.na(gene_extract(Product)) ~
+            gene_extract(Product),
+          !is.na(gene_extract(Description)) ~
+            gene_extract(Description),
+          str_count(Product, "\\w+") == 1 ~ Product,
+          str_count(Description, "\\w+") == 1 ~ Description,
+          .default = str_remove_all(Product, "[:punct:]") |>
+            str_to_lower() |>
+            abbreviate()
+        )
+      ),
+    descr = str_c(Product, Description) |> str_to_lower()
+  ) |>
   arrange(IDX)
 
 write_csv(background, "SupplementaryData4.csv")
 
 # 5 gene difference between LR124 and LR140
 
-uniques =
+uniques <-
   rbh |>
   filter(is.na(LR140) | is.na(LR124)) |>
   pivot_longer(1:2) |>
@@ -115,30 +144,33 @@ filter(background, target_id %in% uniques) |>
 
 # to preserve only coding sequences
 
-cds =
+cds <-
   background |>
-  filter(Type %in% c("cds"),
-         str_detect(descr,
-                    "ibosom|trna|rrna|transfer-messenger|elongation|initiation",
-                    negate = T),
-         ) |>
+  filter(
+    Type %in% c("cds"),
+    str_detect(descr,
+      "ibosom|trna|rrna|transfer-messenger|elongation|initiation",
+      negate = T
+    ),
+  ) |>
   pull(Gene) |>
   unique()
 
 # load kallisto transcript counts data and merge everything in one big ol' table
 
-files = fs::dir_ls("data/kall31/", regexp = "abundance.h5", recurse = 2)
+files <- fs::dir_ls("data/kall31/", regexp = "abundance.h5", recurse = 2)
 
 # import data, remove non CDS and negative samples
 
-raw_data =
+raw_data <-
   files |>
   set_names(str_remove_all(files, "data/kall[0-9]*/|_S[0-9]*/abundance.h5")) |>
   map(~ tximport::tximport(.x,
-                           type = "kallisto",
-                           tx2gene = background |> select(target_id, Gene)) |>
-        data.frame() |>
-        rownames_to_column("Gene")) |>
+    type = "kallisto",
+    tx2gene = background |> select(target_id, Gene)
+  ) |>
+    data.frame() |>
+    rownames_to_column("Gene")) |>
   list_rbind(names_to = "sample") |>
   filter(str_detect(sample, "x", negate = T), Gene %in% cds) |>
   complete(Gene, sample) |>
@@ -148,9 +180,10 @@ raw_data =
 # check samples quality (n of reads and percentage undetected)
 
 summarise(raw_data,
-          depth = sum(counts),
-          sparsity = sparsity(counts),
-          .by = c(sample, flhc_media, strain)) |> View()
+  depth = sum(counts),
+  sparsity = sparsity(counts),
+  .by = c(sample, flhc_media, strain)
+) |> View()
 
 # filter sample with more less than 55 percent genes detected
 
@@ -164,31 +197,41 @@ raw_data |>
 raw_data |>
   filter(sparsity(counts) < .55, .by = sample) |>
   mutate(
-    med = median(if_else(counts == 0, NA, counts), na.rm = T), .by = sample) |>
+    med = median(if_else(counts == 0, NA, counts), na.rm = T), .by = sample
+  ) |>
   summarise(s = sparsity(counts), t = sum(counts >= med), .by = Gene) |>
   ggplot(aes(s, t)) +
   geom_point(shape = "square", alpha = .1, size = 5, color = "#555555") +
   geom_smooth(color = "indianred", se = F) +
-  ggpp::geom_quadrant_lines(xintercept = .55, yintercept = 5,
-                            color = "#555555", linetype = 3) +
-  ggpp::stat_quadrant_counts(xintercept = .55, yintercept = 5,
-                             color = "indianred")
+  ggpp::geom_quadrant_lines(
+    xintercept = .55, yintercept = 5,
+    color = "#555555", linetype = 3
+  ) +
+  ggpp::stat_quadrant_counts(
+    xintercept = .55, yintercept = 5,
+    color = "indianred"
+  )
 
 # filtering genes detected  (max sparsity at .55, equal or more than median in
 # at least 5 samples)
 
-clean_data =
+clean_data <-
   raw_data |>
   filter(sparsity(counts) < .55, .by = sample) |>
-  mutate(med = median(if_else(counts == 0, NA, counts), na.rm = T),
-         .by = sample) |>
+  mutate(
+    med = median(if_else(counts == 0, NA, counts), na.rm = T),
+    .by = sample
+  ) |>
   filter(
     Gene %in% cds,
     sum(counts >= med) >= 5,
     sparsity(counts) < .55,
-    .by = Gene) |>
-  mutate(depth = log(sum(counts)),
-         sparsity = sparsity(counts), .by = sample)
+    .by = Gene
+  ) |>
+  mutate(
+    depth = log(sum(counts)),
+    sparsity = sparsity(counts), .by = sample
+  )
 
 # sparsity is controlled to ~ 13%
 
@@ -204,51 +247,88 @@ n_distinct(clean_data$Gene) # 1605
 # leads to groups of size 3-5 with a slight imbalance towards Lj+Ri
 
 summarise(clean_data,
-          sum(counts),
-          sparsity(counts),
-          local_min = min(if_else(counts == 0, NA, counts), na.rm = T),
-          pseudo = local_min * exp(-1),
-          .by = c(sample, flhc_media, strain)) |> View()
+  sum(counts),
+  sparsity(counts),
+  local_min = min(if_else(counts == 0, NA, counts), na.rm = T),
+  pseudo = local_min * exp(-1),
+  .by = c(sample, flhc_media, strain)
+) |> View()
 
 exp(median(clean_data$depth))
 
 # filtering and centered-log-ratio transformation
 # pseudo values is exp(-1) * local minimum detected
 
-transformed_data =
+transformed_data <-
   clean_data |>
   mutate(
     across(c(counts, starts_with("inf")),
-                ~ centered_log_ratio(.x, exp(-1)),
-                .names = "clr_{.col}"),
-         .by = sample)
+      ~ centered_log_ratio(.x, exp(-1)),
+      .names = "clr_{.col}"
+    ),
+    .by = sample
+  )
 
 # variance and depth covariates are calculated
 
-my_data =
+my_data <-
   transformed_data |>
   select(!contains("inf")) |>
   left_join(summarise(background,
-                      across(where(is.character),
-                             ~ str_unique(.x, ignore_case = T) |>
-                               str_c(collapse = "; ")),
-                      across(where(is.logical),
-                             ~ any(.x)),
-                      .by = Gene), relationship = "many-to-many") |>
-  mutate(lnRatio = Rfast::rowmeans(transformed_data |>
-                                    select(starts_with("clr")) |>
-                                    as.matrix()),
-         tech_var = Rfast::rowVars(transformed_data |>
-                                     select(starts_with("clr")) |>
-                                     as.matrix()))
+    across(
+      where(is.character),
+      ~ str_unique(.x, ignore_case = T) |>
+        str_c(collapse = "; ")
+    ),
+    across(
+      where(is.logical),
+      ~ any(.x)
+    ),
+    .by = Gene
+  ), relationship = "many-to-many") |>
+  mutate(
+    lnRatio = Rfast::rowmeans(transformed_data |>
+      select(starts_with("clr")) |>
+      as.matrix()),
+    tech_var = Rfast::rowVars(transformed_data |>
+      select(starts_with("clr")) |>
+      as.matrix())
+  )
 
 
-my_data |> summarise(depth = mean(depth),
-                     tech_var = mean(tech_var),
-                      .by = c(sample, flhc_media)) |>
-   ggplot() +
+my_data |>
+  summarise(
+    depth = mean(depth),
+    tech_var = mean(tech_var),
+    .by = c(sample, flhc_media)
+  ) |>
+  ggplot() +
   geom_text(aes(depth, tech_var, color = flhc_media, label = sample)) +
   scale_color_manual(values = pal_bac4)
+
+
+sample_corr <- my_data |>
+  pivot_wider(
+    id_cols = Gene,
+    names_from = sample,
+    values_from = lnRatio
+  ) |>
+  column_to_rownames("Gene") |>
+  select(where(is.numeric)) |>
+  as.matrix() |>
+  cor() |>
+  as.data.frame() |>
+  rownames_to_column("sample") |>
+  pivot_longer(where(is.numeric),
+    values_to = "pearson",
+    names_to = "sample.2"
+  ) |>
+  left_join(metadata) |>
+  left_join(metadata, join_by(sample.2 == sample), suffix = c("", ".2")) |>
+  filter(strain == strain.2, flhc_media == flhc_media.2, sample != sample.2)
+
+sample_corr |>
+  summarise(m_pearson = mean(pearson), n = n_distinct(sample), sd_pearson = sd(pearson) * 2, .by = c(flhc_media, strain))
 
 # quality checks
 
@@ -259,7 +339,8 @@ my_data |>
   summarise(
     vlr = var(lnRatio),
     clr = mean(lnRatio),
-    .by = Gene) |>
+    .by = Gene
+  ) |>
   ggplot(aes(x = clr, y = vlr, label = Gene)) +
   geom_text() +
   scale_x_continuous(n.breaks = 10) +
@@ -272,21 +353,22 @@ my_data |>
 
 # clean environment
 
-background_short =
+background_short <-
   my_data |>
   drop_na(PGP) |>
   select(Gene, starts_with("PGP")) |>
-  pivot_longer(cols = c(starts_with("PGP")),
-               values_to = "category",
-               names_to = "level") |>
+  pivot_longer(
+    cols = c(starts_with("PGP")),
+    values_to = "category",
+    names_to = "level"
+  ) |>
   mutate(category = str_to_lower(category) |>
-           str_replace_all("\\|", ", ") |>
-           str_replace_all("_", " ") |>
-           str_replace("prtoeins", "proteins") |>
-           str_replace_all("plant vitamin|root vitamin", "vitamin")) |>
+    str_replace_all("\\|", ", ") |>
+    str_replace_all("_", " ") |>
+    str_replace("prtoeins", "proteins") |>
+    str_replace_all("plant vitamin|root vitamin", "vitamin")) |>
   separate_rows(category, sep = "; ") |>
   filter(str_detect(category, "putative", negate = T)) |>
   distinct()
 
 gc()
-
