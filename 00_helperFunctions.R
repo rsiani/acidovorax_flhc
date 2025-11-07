@@ -13,7 +13,6 @@
 # mmseqs easy-rbh LR140.ffn LR124.ffn -s 7.5 --search-type 3 rbh.tsv tmp --format-output query,target,evalue,pident,alnlen --translation-table 11
 
 
-
 # load libraries
 
 pacman::p_load(
@@ -229,38 +228,38 @@ sparsity <- \(.x) sum(.x == 0, na.rm = T) / length(.x)
 
 # color and shape palettes
 
-pal_bac2 <- c("flhC+" = "#FC7D0B", "flhC-" = "#1170AA")
+pal_bac2 <- c("flhC+" = "#FFBC79", "flhC-" = "#A3CCE9")
 
 pal_bac4 <-
   c(
-    "flhC+ Lj" = "#FC7D0B",
-    "flhC+ Lj+Ri" = "#FFBC79",
-    "flhC- Lj" = "#1170AA",
-    "flhC- Lj+Ri" = "#A3CCE9"
+    "flhC+ Lj+Ri" = "#FC7D0B",
+    "flhC+ Lj" = "#FFBC79",
+    "flhC- Lj+Ri" = "#1170AA",
+    "flhC- Lj" = "#A3CCE9"
   )
 
 pal_bac7 <- c(
   "Lj" = "#8BC34A",
   "Lj+Ri" = "#E1BEE7",
-  "flhC+" = "#FC7D0B",
-  "flhC+ Lj+Ri" = "#FFBC79",
-  "flhC-" = "#1170AA",
-  "flhC- Lj+Ri" = "#A3CCE9",
+  "flhC+ Lj+Ri" = "#FC7D0B",
+  "flhC+" = "#FFBC79",
+  "flhC- Lj+Ri" = "#1170AA",
+  "flhC-" = "#A3CCE9",
   "ns" = "grey75"
 )
 
 pal_growth7 <- c(
   "control Lj" = "#8BC34A",
   "control Lj+Ri" = "#E1BEE7",
-  "flhC+ Lj" = "#FC7D0B",
-  "flhC+ Lj+Ri" = "#FFBC79",
-  "flhC- Lj" = "#1170AA",
-  "flhC- Lj+Ri" = "#A3CCE9",
+  "flhC+ Lj+Ri" = "#FC7D0B",
+  "flhC+ Lj" = "#FFBC79",
+  "flhC- Lj+Ri" = "#1170AA",
+  "flhC- Lj" = "#A3CCE9",
   "ns" = "grey75",
   "Lj" = "#8BC34A",
   "Lj+Ri" = "#E1BEE7",
-  "flhC+" = "#FC7D0B",
-  "flhC-" = "#1170AA"
+  "flhC+" = "#FFBC79",
+  "flhC-" = "#A3CCE9"
 )
 
 pal_shape <-

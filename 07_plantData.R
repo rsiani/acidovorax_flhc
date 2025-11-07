@@ -126,13 +126,15 @@ mod1 <-
   colonization_AMF |>
   pivot_longer(Vesicle:Hyphae) |>
   nest(.by = name) |>
-  mutate(fit = map(data, ~ nlme::lme(value ~ flhc,
-    random = ~ 1 | strain,
-    weights = nlme::varIdent(form = ~ 1 | flhc),
-    data = .x
-  )))
+  mutate(fit = map(
+    data,
+    ~ lme4::glmer(cbind(value, 100 - value) ~ flhc + (1 | strain),
+      family = "binomial",
+      data = .x
+    )
+  ))
 
-pluck(mod1, "fit") |> map(qqnorm)
+pluck(mod1, "fit") |> map(~ qqnorm(resid(.x)))
 pluck(mod1, "fit") |> map(~ plot(resid(.x)))
 
 pluck(mod1, "fit") |>
@@ -158,12 +160,16 @@ df_mod <-
     ),
     p.adj = p.adjust(p.value, "fdr"),
     pos_y = c(80, 75, 70),
+    name = factor(name, levels = c("Hyphae", "Vesicle", "Arbuscule")),
     .by = name
   )
 
 
 p2 <- colonization_AMF |>
   pivot_longer(Vesicle:Hyphae) |>
+  mutate(name = factor(name,
+    levels = c("Hyphae", "Vesicle", "Arbuscule")
+  )) |>
   ggplot(aes(
     x = flhc, y = value, color = flhc, shape = strain,
     fill = after_scale(color)
@@ -178,7 +184,7 @@ p2 <- colonization_AMF |>
     show.legend = F
   ) +
   scale_color_manual(
-    values = pal_growth7,
+    values = c("grey75", "#FC7D0B", "#1170AA"),
     labels = c(
       "flhC+" = "*flhC*+",
       "flhC-" = "*flhC*-"
@@ -210,7 +216,7 @@ p2 <- colonization_AMF |>
     # color = "none",
     shape = guide_legend(override.aes = list(size = 5))
   ) +
-  facet_wrap(~name) +
+  facet_wrap(vars(name)) +
   geomtextpath::geom_textsegment(
     data = df_mod,
     aes(

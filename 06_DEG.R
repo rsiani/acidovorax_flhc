@@ -82,7 +82,7 @@ tidied |>
 
 tidied |>
   select(Gene, Product, term, estimate, std.error, df, statistic, p.value, q.value, s.value, lfdr, significant, side) |>
-  write_csv("SupplementaryData1.csv")
+  write_csv("SupplementaryData2.csv")
 
 # enrichment --------------------------------------------------------------
 
@@ -133,7 +133,7 @@ background_short |>
 
 
 dataset_enrich |>
-  write_csv("SupplementaryData2.csv")
+  write_csv("SupplementaryData3.csv")
 
 # pathway analysis --------------------------------------------------------
 
@@ -159,7 +159,6 @@ pmr_model <-
         )
       )
   )
-
 
 
 pmr_tidied <-
@@ -193,7 +192,7 @@ pmr_tidied <-
     distinct())
 
 pmr_tidied |>
-  write_csv("SupplementaryData3.csv")
+  write_csv("SupplementaryData4.csv")
 
 # plotting ----------------------------------------------------------------
 

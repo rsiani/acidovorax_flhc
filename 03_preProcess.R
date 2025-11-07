@@ -127,7 +127,7 @@ background <-
   ) |>
   arrange(IDX)
 
-write_csv(background, "SupplementaryData4.csv")
+write_csv(background, "SupplementaryData1.csv")
 
 # 5 gene difference between LR124 and LR140
 
